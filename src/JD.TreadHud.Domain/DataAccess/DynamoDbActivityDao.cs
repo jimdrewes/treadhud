@@ -69,15 +69,45 @@ namespace JD.TreadHud.Domain.DataAccess
         {
             try
             {
-                _logger.LogInformation("Getting all activities.");
+                _logger.LogInformation("Getting all activities via DynamoDB.");
+
+                DateTime timeout = DateTime.Now.AddMilliseconds(TIMEOUT_IN_MS);
+                var search = _context.ScanAsync<Activity>(new List<ScanCondition>());
+
+                // Essentially this causes the operation to complete syncronously.  Need to re-factor to
+                // handle true async saving.
+                while (!search.IsDone && DateTime.Now < timeout) { }
+
+                if (!search.IsDone)
+                {
+                    _logger.LogError("Timed out while searching activity list.");
+                    //return new List<Activity>();
+                }
+
+                _logger.LogInformation("Finished activity search.  Pulling results down.");
+                
+                // This just has it pull everything.  Needs refactoring to pull in batches.
+                var task = search.GetRemainingAsync();
+
+                timeout = DateTime.Now.AddMilliseconds(TIMEOUT_IN_MS);
+                while (!task.IsCompleted && DateTime.Now < timeout) { }
+
+                if (task.Status != TaskStatus.RanToCompletion)
+                {
+                    _logger.LogError("Failed to retrieve activity list - status:  {0}, exception: {1}", task.Status.ToString(), task.Exception == null ? "" : task.Exception.InnerException.Message);
+                    return new List<Activity>();
+                }
+
+                _logger.LogInformation("Finished pulling down results.");
+
+                return task.Result;
             }
             catch (Exception ex)
             {
-                _logger.LogError("***** ERROR ADDING ACTIVITY *****");
-                _logger.LogError(ex.Message);
+                _logger.LogError("Error while pulling activity list from DynamoDB: {0}", ex.Message);
             }
             
-            return null;
+            return new List<Activity>();
         }
     }
 }
