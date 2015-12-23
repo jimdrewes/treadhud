@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using JD.TreadHud.Domain.Managers;
+using JD.TreadHud.Domain.DataAccess;
 
 namespace JD.TreadHud.Api
 {
@@ -34,6 +35,7 @@ namespace JD.TreadHud.Api
             // Add framework services.
             services.AddMvc();
             services.AddTransient<IActivityManager, ActivityManager>();
+            services.AddTransient<IActivityDao, DynamoDbActivityDao>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

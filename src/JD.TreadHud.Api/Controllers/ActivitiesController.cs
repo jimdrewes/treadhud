@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNet.Mvc;
 using Microsoft.Extensions.Logging;
 using JD.TreadHud.Domain.Managers;
@@ -22,9 +23,17 @@ namespace JD.TreadHud.Api.Controllers
         [HttpGet]
         public IEnumerable<string> Get()
         {
-            var activity = _activityManager.GetActivity(Guid.NewGuid());
+            JD.TreadHud.Domain.Models.Activity newActivity = new JD.TreadHud.Domain.Models.Activity();
+            newActivity.Id = Guid.NewGuid();
+            newActivity.StartDate = DateTime.Now.AddMinutes(-20);
+            newActivity.EndDate = DateTime.Now;
+            _activityManager.AddActivity(newActivity);
+
             var activities = _activityManager.GetAllActivities();
-            var success = _activityManager.AddActivity(activity);
+            if (activities != null && activities.Count > 0)
+            {
+                return activities.Select(a => a.Id.ToString());
+            }
             return new string[] { "value1", "value2" };
         }
 
